@@ -1,0 +1,47 @@
+the-job tasks:
+
+1. Compute (Where your code runs)
+You must understand the difference between managed servers and serverless computing.
+
+EC2 (Elastic Compute Cloud): Virtual servers in the cloud. Know how to spin up an instance, attach storage, and configure Security Groups (firewalls).
+
+AWS Lambda (Serverless): Crucial for modern backend engineering. Know how to write stateless functions that trigger on events (like an API call or a database change).
+
+=========================================================================================================================
+
+
+
+2. Networking (How pieces talk to each other)
+This is a favorite topic in SDE-1 interviews because it tests your fundamental networking knowledge.
+
+VPC (Virtual Private Cloud): Your isolated network in AWS. Understand Public Subnets (where your internet-facing web servers sit) vs. Private Subnets (where your databases live for security).
+
+IAM (Identity and Access Management): The most important security concept. Never hardcode API keys! Understand IAM Roles and Policies (e.g., how to safely give your EC2 instance permission to read from an S3 bucket).
+
+ALB (Application Load Balancer): How traffic is distributed across multiple backend servers to prevent crashes.
+
+=========================================================================================================================
+3. Databases & Storage (Where data lives)
+Relational and non-relational database management on the cloud.
+
+RDS (Relational Database Service): Cloud-managed relational databases. Since you work with PostgreSQL, know how RDS handles automated backups, 
+scaling, and Multi-AZ (Availability Zone) deployment for high availability.
+
+DynamoDB: AWS’s managed NoSQL database. Understand key-value pairs and when to choose NoSQL over SQL.
+
+S3 (Simple Storage Service): Object storage. Know how to store static assets (images, profile pictures, video files) safely using buckets.
+
+
+=========================================================================================================================
+
+4. Messaging & Queues (Asynchronous Processing)
+As a full-stack engineer, you know how vital background processing is (using tools like Redis/BullMQ). AWS has its own powerful equivalents that you should definitely know:
+
+SQS (Simple Queue Service): Managed message queues. Essential for decoupling microservices so a heavy task doesn't block your main API server.
+
+SNS (Simple Notification Service): A Pub/Sub messaging service used to broadcast notifications (SMS, Email, or triggering Lambda functions).
+
+5. Monitoring & Deployment (Keeping it alive)
+CloudWatch: The central dashboard for logs and metrics. If your backend throws a 500 Internal Server Error in production, CloudWatch is where you go to check the console logs and debug
+
+=========================================================================================================================

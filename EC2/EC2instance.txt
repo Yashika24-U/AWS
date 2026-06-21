@@ -1,0 +1,244 @@
+Creating an EC2 instance:
+
+
+Reviewing Your Understanding
+1.  "I created a name for it"  100% Correct.This is just a metadata tag so you don’t confuse this server with others later.
+2.  "Choose AMI = Server needs an OS to run (Linux)"  
+3.  An AMI is your OS blueprint. Choosing Linux means your virtual machine boots up with a Linux kernel ready to go.
+4.  "Instance Type = How much storage or computer needs" $\rightarrow$ Correction here: The Instance Type determines your CPU (Brains) and RAM (Short-term memory). 
+5.  The actual storage (the hard drive/SSD) is configured a little further down in a section called EBS (Elastic Block Store).
+How to think about it: Instance Type = choosing an Intel i5 vs. an Intel i7 laptop. EBS = choosing a 256GB vs 512GB SSD.
+6.  Firewall:(Security Group) 
+
+
+(FROM AWS)
+Allow SSH traffic from
+Helps you connect to your instance
+
+Anywhere
+0.0.0.0/0
+Allow HTTPS traffic from the internet
+To set up an endpoint, for example when creating a web server
+Allow HTTP traffic from the internet
+To set up an endpoint, for example when creating a web server
+
+
+Ports are the apartment numbers of the digital world.
+
+Inside your single Linux server, multiple software programs are running at the same time:
+
+Your Web Server software (like Nginx) sits by the window, listening only to Apartment 80 (HTTP) and Apartment 443 (HTTPS).
+
+Your SSH remote-control software sits deep inside, listening only to Apartment 22.
+
+The Connection Flow:
+When a user types your website into Chrome, their browser does this under the hood:
+
+Step 1: It finds your server using the IP address.
+
+Step 2: Because the user typed http://, the browser automatically knocks on Port 80.
+
+Step 3: The AWS Security Group (the security guard) checks its rules: "Is Port 80 open to the world?" Yes. It lets the traffic pass through the front door.
+
+Step 4: Linux takes that incoming traffic and hands it directly to the software listening on Port 80 (Nginx). Nginx processes it and sends your frontend website back to the user.
+
+If a hacker tries to knock on Port 3306 (the database port), the Security Group looks at its rules, sees that Port 3306 is locked, and drops the traffic immediately before it can even touch your operating system.
+
+
+
+===================================================================================================================================================
+
+1. "Will a software like Nginx only listen for Port 80?"
+Yes, exactly. When you configure Nginx, you explicitly tell it in a configuration file: "Listen on Port 80." When the Nginx process starts up on Linux,
+it grabs a monopoly on Port 80. No other software on that entire server can use Port 80 while Nginx is running.
+
+If you tried to start another web server (like Apache or another Node.js app) on Port 80 at the same time, 
+Linux would throw an error: Error: listen EADDRINUSE: address already in use :::80.(You will hit an error the moment two pieces of software try to fight for the exact same port.)
+
+Similarly, your PostgreSQL database software starts up and says, "I am taking Port 5432." *
+Your Redis software starts up and says, "I am taking Port 6379."
+
+2. When you visit a website, does the server see your IP?
+Yes, 100%. The server absolutely must see your IP address, otherwise, it would be impossible for the website to load on your screen.
+
+Think of sending a request to a website like mailing a physical letter.
+
+On the front of the envelope, you write the Destination Address (The Server's IP).
+
+On the back of the envelope, you must write the Return Address (Your Device's Public IP).
+
+If you don't provide a return address, the server might process your request, but it won't know where on earth to mail the website data back to!
+
+When a request hits your Express/Node.js backend, you can actually see the user's IP in your code using req.ip
+
+
+(High level)
+3. "How does my device find that website's server?"
+You said: "With the IP, it finds the server... but how does it find it?" When you type a name like google.com or yourwebsite.com, your laptop has no idea what that means. Computers only understand numbers (IP addresses). Here is the step-by-step journey of how your device locates that specific server in a fraction of a second:
+
+Step A: The Phonebook Lookup (DNS)
+Before your laptop even leaves your home network, it needs the server's IP address. It uses DNS (Domain Name System), which is the phonebook of the internet.
+
+Your laptop asks a DNS server: "What is the IP address for google.com?"
+
+The DNS server replies: "It is 142.250.190.46."
+
+Now your laptop knows the exact destination.
+
+Step B: The Highway System (Routing)
+Your laptop creates a digital "packet" of data containing your return IP, the server's destination IP, and the request (e.g., "Show me the home page").
+
+Your laptop sends this packet to your home Router.
+
+Your Router doesn't know where that specific server is, so it passes it up to your ISP (Internet Service Provider) like Airtel, Jio, etc.
+
+The ISP uses a massive network of interconnected Routers across the world. Each router looks at the destination IP and says, "I don't own this IP, but I know it lives in that direction," and passes it along (this is called a "hop").
+
+The packet travels across underwater fiber-optic cables and high-speed networks until it reaches the exact AWS Data Center in Mumbai.
+
+Step C: Dropping it off at the Door
+The AWS network router sees the destination IP matches your EC2 instance.
+
+It sends the packet to your EC2 instance's Security Group.
+
+The Security Group checks: "Is Port 80 open?" Yes!
+
+The packet passes into the Linux OS, and Linux hands it to Nginx (which is listening on Port 80).
+
+Nginx reads your Return IP, packages up the React frontend files, and sends a new envelope all the way back to your device's dynamic IP address.
+
+===================================================================================================================================================
+
+Public vs Private IP
+IP Type on EC2       What it is                                                                                         Equivalent in your house
+Private IPv4        Usually looks like 172.31.X.X. This is the server's internal address inside the AWS data center.    Your laptop's 192.168.1.X IP.
+Public IPv4         The address you see in your AWS dashboard. This is how the whole world accesses your app            Your home router's Public IP.
+
+
+Permission groups:
+
+Split into 3 sets:
+
+rwx | rwx | rwx
+1. Owner permissions
+2. Group permissions
+3. Others permissions
+
+. Breaking Down chmod 400
+In Linux, file permissions are split into three numbers representing three groups of people:
+
+Owner (You): The first number.
+
+Group (People on your network/team): The second number.
+
+Others (Anyone else using this computer): The third number.
+
+The number 4 means Read-only. The number 0 means No access at all.
+
+When you run chmod 400 yashika-aws-ec2-key.pem, you are telling the Linux operating system:
+
+Owner (4): Give only me permission to read this file.
+
+Group (0): Block everyone in my user group from seeing it.
+
+Others (0): Block the rest of the world from seeing it.
+
+No Execute: Notice there is no "execute" permission. You don't run a .pem file like code; it's just a passkey.
+
+2. Why shouldn't it be visible?
+Think of your .pem private key exactly like your physical house key.
+
+If you leave your house key lying around on a table in a public coffee shop, anyone walking by can look at it, photograph it, or copy its teeth structure.
+
+In the digital computer world, if you leave your private key file with open permissions (like chmod 777 or default download permissions), any background script, malware, or other user account running on your laptop can peek into that folder and copy your key. If a malicious program steals that key, they don't even need your password—they can log straight into your AWS EC2 instance, steal your PREN stack database, or spin up thousands of dollars in Bitcoin mining servers on your account.
+
+3. Why does AWS force this rule?
+SSH stands for Secure Shell. The software handling the connection is designed to protect you from your own mistakes.
+
+When you run the SSH command, the software checks the file permissions of yashika-aws-ec2-key.pem before it even attempts to talk to AWS.
+
+If it sees that Group or Others can read the file, it panics.
+
+It assumes your laptop is a compromised environment.
+
+It will instantly terminate the command and throw this exact error:
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@ WARNING: UNPROTECTED PRIVATE KEY FILE! @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+Permissions 0644 for 'yashika-aws-ec2-key.pem' are too open.
+It is required that your private key files are NOT accessible by others.
+Load key "yashika-aws-ec2-key.pem": bad permissions
+Permission denied (publickey).
+
+4. What happens after you run it?
+Once you execute chmod 400 "yashika-aws-ec2-key.pem", the file is officially locked down.
+
+When you run your connection command next:
+
+Bash
+ssh -i "yashika-aws-ec2-key.pem" ec2-user@your-ec2-public-ip
+The SSH software looks at your key, sees its permissions are strictly 400 (safe and private), and says, "Perfect, this key is secure."
+
+It uses the key to solve a cryptographic puzzle sent by your EC2 server.
+
+The doors open, your local terminal prompt changes, and you are officially sitting inside your remote cloud Linux command line.
+
+You've successfully secured the key. Are you about to run the ssh command right now to log
+
+===============================================================================================================================================
+
+Yes, exactly! Your intuition is spot-on. There are absolutely Public DNS and Private DNS, and they serve two completely different purposes depending on who is trying to look up the server.
+
+Let's break them down cleanly and tie them back to how they work in cloud architecture like AWS.
+
+1. Public DNS (The "Global Phonebook")
+This is the standard DNS that everyone on earth uses daily. When a domain name is registered on a Public DNS, anyone with an internet connection can query it and get the public IP address back.
+
+How it works: When someone types a domain like google.com or your portfolio site into their browser, their request goes out to global public DNS servers (like Google's 8.8.8.8 or Cloudflare's 1.1.1.1).
+
+The Result: The DNS server replies with a Public IP address (e.g., your EC2 instance's Public IP).
+
+Use Case: You use this when you want your users to find your PREN stack website from their home computers.
+
+2. Private DNS (The "Internal Intercom")
+A Private DNS only works inside a specific isolated network. If someone from the outside internet tries to query a private domain name, it completely fails—the internet doesn't even know it exists.
+
+How it works: In AWS, this is usually handled by a service called Route 53 Private Hosted Zones inside your private network (VPC).
+
+The Result: It resolves a domain name to an internal, Private IP address (like 172.31.X.X).
+
+Use Case: This is purely for internal communication between your own backend systems.
+
+Real-Time Example: Your PREN Stack in Production
+To see why an SDE-1 needs to know this, imagine you have a large-scale production setup on AWS with two servers:
+
+Server A: Your Node.js backend.
+
+Server B: Your PostgreSQL database.
+
+For security, you should never expose your database to the public internet. So, how do you point your Node.js app to the database without hardcoding messy, changing private IP addresses? You use Private DNS.
+
+You create a private domain name inside your AWS network called database.internal.
+
+Inside your Node.js db.js configuration file, you set the connection string to:
+postgresql://user:password@database.internal:5432/mydb
+
+When your Node app tries to connect, AWS's Private DNS translates database.internal to the database's internal Private IP address.
+
+If a hacker sitting at home tries to type database.internal into their browser, their Public DNS will say: "Error: Host not found." The database is completely safe and hidden.
+
+Summary
+Public DNS: Translates public domain names to Public IPs for the outside world.
+
+Private DNS: Translates internal domain names to Private IPs for secure, backend-to-backend communication inside your server network.
+
+Does this distinction make sense for how you can secure your database
+To open Ubuntu :wsl -d Ubuntu
+
+===============================================================================================================================================
+
+
+
+
+

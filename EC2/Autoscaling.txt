@@ -1,0 +1,123 @@
+🗺️ Part 1: The Core Misconception (Why EC2 Alone Isn't Enough)
+Your current understanding is: "EC2 is all about creating a server and making the internet reach a device."
+
+While that is true for a hobby project, it fails completely in production for three reasons:
+
+The Single Point of Failure: If you have only one EC2 instance and its physical hardware crashes in the AWS data center, your entire app goes down.
+
+IP Addresses Change Constantly: If your Auto Scaling Group deletes an unhealthy server and spins up a new one, the new server gets a brand-new public IP address. You can't expect your users to type a different IP address into their browser every time a server restarts!
+
+Traffic Overload: A single small EC2 instance can only handle a limited number of concurrent connections before it runs out of memory and crashes.
+
+
+Part 1: "IP Addresses Change Constantly"
+To understand this, you need to know about a core cloud concept called ephemeral (temporary) infrastructure. In AWS, EC2 instances are treated like disposable pieces of paper—if one gets glitchy, slows down, or crashes, AWS doesn't try to fix it. It just throws it away and spins up a brand-new one.
+
+An Auto Scaling Group (ASG) is an automated system you set up to monitor your EC2 instances.
+
+If your Node.js app crashes completely on an instance, the ASG says, "Oh, this instance is unhealthy."
+
+It immediately terminates (deletes) that EC2 instance.
+
+It instantly boots up a brand-new, fresh EC2 instance to replace it.
+
+The Problem with the IP Address:
+Every time a new EC2 instance is born, AWS grabs a random public IP address from its giant bucket and hands it to that instance.
+
+Imagine your first instance had the public IP 13.53.122.114. If that instance dies and the Auto Scaling Group replaces it, the new instance might get the IP 54.21.43.99.
+
+If your users were accessing your website by typing 13.53.122.114 into their browsers, their screens would suddenly say "Site Can't Be Reached." You would have to message every single user and say, "Hey, our server restarted! Please use this new IP address instead." Obviously, that is impossible for a real business.
+
+Part 2: "Traffic Overload (Limited Concurrent Requests)"
+"Concurrent requests" means the number of users hitting your server at the exact same split-second.
+
+Remember, an EC2 instance is just a computer. A small, cheap instance (like the t3.micro you are using) has very limited resources—specifically, it usually has 2 vCPUs and 1GB of RAM.
+
+What happens during an overload:
+Think of your Node.js backend like a single waiter at a restaurant table.
+
+If 5 customers (users) arrive and ask for food, the waiter can easily take their orders.
+
+If 50 customers arrive at the exact same time, the waiter gets stressed, but might manage if they work incredibly fast.
+
+If 5,000 customers flood into the restaurant all at once demanding food at the exact same second, the waiter will freeze, collapse from exhaustion, and stop serving anyone entirely.
+
+On a small EC2 instance, if too many users make requests at the same time, the instance runs completely out of RAM and CPU. The operating system freezes, and your Node.js application crashes under the weight of the traffic.
+
+How Cloud Architects Fix Both Problems: The Application Load Balancer (ALB)
+To solve the changing IP problem and the traffic overload problem at the same time, you place an Application Load Balancer (ALB) in front of your Auto Scaling Group.
+
+The Load Balancer acts like a highly organized host at the front door of the restaurant:
+
+Fixing the IP Problem: The Load Balancer gets a single, permanent public URL (or IP) that never changes, no matter what. You point your domain name (like myapp.com) directly to the Load Balancer. Your users only ever talk to the Load Balancer.
+
+Fixing the Traffic Problem: If the Load Balancer sees thousands of users flooding in, it talks to the Auto Scaling Group and says, "Hey, we are getting slammed! Spin up 3 more EC2 instances right now!"
+
+Smart Routing: The Load Balancer then acts like a traffic cop. It takes the incoming user requests and distributes them evenly: "User 1 go to EC2 A, User 2 go to EC2 B, User 3 go to EC2 C."
+
+⚖️ Part 2: What is a Load Balancer, and Why Port 80?
+An Application Load Balancer (ALB) is a highly available, managed reverse-proxy device that sits at the front door of your network architecture, as shown in image_a2f480.jpg.
+
+Where is it placed?
+It is placed on the outer edge of your VPC, sitting squarely between the public internet and your private EC2 servers.
+
+Why do we add Port 80 to the Load Balancer?
+Every network application needs an entry gateway.
+
+Port 80 is the universal, standard port for unencrypted web traffic (http).
+
+
+
+
+
+Port 443 is the standard port for secure web traffic (https).
+
+By opening Port 80 on the Load Balancer, you are telling AWS: "Listen for incoming web traffic from anyone in the world typing my website's URL into their browser."
+
+As an engineer, when should you add Port 80?
+You add Port 80 (or 443) to the Load Balancer because it is the only component exposed to the public internet. Your users never talk to your EC2 instances directly; they talk exclusively to the Load Balancer.
+
+🌐 Part 3: Why Do We Create Multiple Public Subnets? (High Availability)
+AWS forces a strict rule: An Application Load Balancer must be deployed across at least two different subnets, and each subnet must be in a different Availability Zone (AZ).
+
+Why?
+An Availability Zone is a physical, distinct data center building with its own independent power, cooling, and network.
+
+Plaintext
+       [ Public Internet ]
+               |
+      +--------v--------+
+      |  Load Balancer  | (Spans across multiple AZs)
+      +---+---------+---+
+          |         |
+  [ AZ-1 / Subnet A ]   [ AZ-2 / Subnet B ]
+   |  EC2 Server 1  |    |  EC2 Server 2  |
+If a physical storm hits an AWS data center and entirely knocks out Availability Zone 1, your subnet there goes completely dark. Because your Load Balancer was forced to look at Subnet B in Availability Zone 2 as well, it instantly shifts 100% of incoming user traffic to the surviving data center. Your users don't experience a single second of downtime.
+
+🏎️ Part 4: The Under-the-Hood Request Lifecycle (Step-by-Step)
+Let's trace exactly how data packets move from a user's computer, through the architecture in image_a2f480.jpg, and back.
+
+Phase 1: The Outbound Journey (User ➔ Server)
+DNS Lookup: A user types your domain (e.g., myapp.com) into their browser. The DNS system translates that domain name into the Public IP address of your Application Load Balancer. (The user never knows your EC2 instances' IPs).
+
+Hitting the ALB Gateway: The browser constructs an HTTP request packet. The destination IP is the ALB, and the destination port is Port 80. The packet travels across the internet and reaches the ALB.
+
+The Target Group Evaluation: The Load Balancer looks at its Target Group (the pink dashed box in image_a2f480.jpg). A Target Group is simply a dynamic list of healthy EC2 internal IP addresses managed by your Auto Scaling Group.
+
+Proxy Routing: The ALB strips away the user's external routing headers, selects one of the healthy EC2 instances using a routing algorithm (like Round Robin), and forwards the request packet inside the VPC network to that specific EC2 instance's Private IP address (e.g., 11.0.1.x).
+
+Phase 2: Processing and Returning (Server ➔ User)
+Processing: Apache on the selected EC2 instance receives the packet, processes the code, generates your HTML text block, and packages it up as an HTTP Response.
+
+The Stateful Return: Because connection tracking is stateful, the EC2 instance shoots the response packet right back to the internal interface of the Load Balancer.
+
+Delivery: The Load Balancer passes the response back out to the internet, delivering the data right into the user's web browser window.
+
+🧠 SDE Engineering Summary Checklist
+When building systems professionally, keep these architectural truths in mind:
+
+The Load Balancer provides a single, unchanging entry point for your users.
+
+The Target Group abstracts the servers, allowing your Auto Scaling Group to aggressively add or delete EC2 instances behind the scenes without breaking the user connection.
+
+Multi-Subnet Architecture guarantees that your system can survive an actual data center power failure or physical disaster.

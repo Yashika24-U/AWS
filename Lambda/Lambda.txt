@@ -1,0 +1,131 @@
+What is Lambda?
+  code   ->   lambda  ->  output
+The lambda will take the code as input (Lambda excutes it) and produces the output
+The code can be in the form JAVA, Python, Golang,NodeJS
+
+
+==============================================================
+Advantages  of AWS Lambda
+==============================================================
+No Server setup
+No start or stop
+No additional cost
+Serverless
+
+
+To understand AWS Lambda, we have to look at the evolution of how we deploy code.
+
+Up until now, our entire conversation has been about EC2 instances. We talked about how an EC2 instance is a computer that you rent. It stays 
+turned on 24/7, and you have to install the operating system, update Node.js, manage security groups, and pay for it every second it 
+runs—even if no users are visiting your website at 3:00 AM.
+
+AWS Lambda was invented to completely destroy that headache. It introduced a concept called Serverless Computing.
+
+
+1. What is AWS Lambda?
+AWS Lambda is a compute service that lets you run code without provisioning or managing physical or virtual servers.
+
+Instead of renting a whole virtual computer (EC2), you just upload your single Node.js function code directly to AWS. Lambda keeps your 
+code on standby. The moment a user makes an API request, AWS instantly spins up a tiny container behind the scenes, executes your function, 
+returns the response to the user, and immediately deletes the container.
+
+You don't manage an operating system, you don't worry about scaling, and you only pay for the exact milliseconds your code takes to execute.
+
+
+2. The Core Purpose: Event-Driven Execution
+The main purpose of Lambda is to execute code only when an event happens. It sits completely dormant until something triggers it.
+
+Here are three real-world examples of how developers use Lambda instead of an EC2 instance:
+
+Example A: Processing S3 Image Uploads
+
+Remember our S3 bucket example? Let's say a user uploads a high-resolution 10MB profile picture. 
+You need to create a tiny icon thumbnail out of it.
+
+The Lambda Flow: You program your S3 bucket to trigger a Lambda function the exact millisecond a new image lands in the bucket. 
+The Lambda fires up, resizes the image to a thumbnail, saves the thumbnail back to S3, and shuts down. 
+It ran for exactly 1.2 seconds, costing you next to nothing. 
+You didn't need an EC2 instance running 24/7 just waiting for someone to upload a file.
+
+Example B: Building a Serverless API Backend
+Instead of hosting an entire Express.js application on an EC2 instance that runs constantly, you can link an AWS service called API Gateway 
+to AWS Lambda.
+
+When a user visits myapp.com/api/users, API Gateway catches the request and triggers your specific Lambda function called getUsers(). 
+The function reads from your PostgreSQL database, gives the user the data, and vanishes.
+
+
+3. EC2 vs. AWS Lambda (The "Why We Use It")
+To see the true purpose of Lambda, look at how it compares to the EC2 computer setup you've been
+
+
+
+Feature                             EC2 Instance (Traditional)                                                                  AWS Lambda (Serverless)
+Server Management       You maintain the OS, patch updates, and manage Node.js versions.                                        Zero Management.AWS handles all underlying infrastructure.
+Scaling                 You must configure Auto Scaling Groups and Load Balancers to handle traffic surges.                     Infinite Auto-Scaling. If 1 user hits your site, 1 Lambda runs. If 10,000 users hit your site at the exact same second, AWS instantly clones your function 10,000 times simultaneously.
+Cost                    You pay by the hour/second for the instance size, regardless of whether 
+                        it's processing requests or idling.You pay only for execution time (measured in milliseconds).          If no one uses your app for a week, your bill is exactly $0.00.
+Running                 Time LimitCan run forever (ideal for long, continuous background processes or WebSockets)               .Max 15 minutes. If a function takes longer than 15 minutes to run, AWS forces it to shut down.
+
+
+==============================================================
+Steps to create Lambda function:
+==============================================================
+
+1. Search Lambda
+2. Create function
+3. Write the func name and choose the code
+4. Then write the code in aws terminal
+5. Then click deploy
+6. To test click test, create test name and test the func
+7.Logs will be saved in Cloud Watch, and here also you can see the Logs
+
+This was how we can create basic lambda function
+
+==============================================================
+But what if I want to create from my local code in VSCODE.
+==============================================================
+
+
+
+3 Golden Rules of Lambda (What you must know)
+Before writing code, you need to understand how AWS Lambda finds your code. AWS uses a setting called a Handler. The default handler setting in AWS is usually index.handler.
+
+This is broken down into two parts:
+
+index: This tells AWS to look for a file named index.js (or index.mjs).
+
+handler: This tells AWS to look for an exported function named handler inside that file.
+
+⚠️ The Rule: Your file name and your exported function name must match exactly what is configured in your AWS Lambda "Runtime settings". 
+If your file is app.js and your function is myFunc, your AWS handler setting must be changed to app.myFunc. 
+To keep it simple, it's best to stick to index.js and handler.
+
+
+==============================================================
+But what if I want to create from S3.
+==============================================================
+Step1: Create a bucket
+Step2: Upload files from computer S3
+Step3: Then click saved
+Step4: I will be given S3 URL
+Step5: Then in Lambda choose Upload from s3 and then test the fuc.
+
+
+==============================================================
+Lambda Function URL ->config->func url-> create func url -> url ->public and private 
+==============================================================
+
+==============================================================
+ENV In code:
+We should import os
+==============================================================
+
+
+==============================================================
+Lambda Layers:
+It is a library for lambda
+==============================================================
+
+
+

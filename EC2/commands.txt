@@ -1,0 +1,5 @@
+hostname -I : If it prints your custom AWS private IP (like 11.0.1.64), you are securely inside your EC2 instance.
+
+If it prints something else (like a 172.X.X.X range common to WSL networks), you are back on your local laptop. 
+~/.ssh/
+chmod 400 -> permissions
