@@ -142,8 +142,9 @@ With S3 Requestor Pays, the requester, not the data owner, pays for data transfe
 This refers to an advanced AWS S3 feature called Requester Pays buckets. 
 It is a brilliant system design concept that interviewers love to test you on for mid-to-senior levels, but knowing it for an SDE-1 
 role makes you look like a complete rockstar.
-To understand it, we first need to look at who normally pays the bill when data leaves an S3 bucket.1. 
-The Default S3 Billing Model (Bucket Owner Pays)Normally, if you own an AWS account and you create an S3 bucket, 
+
+To understand it, we first need to look at who normally pays the bill when data leaves an S3 bucket.
+1. The Default S3 Billing Model (Bucket Owner Pays)Normally, if you own an AWS account and you create an S3 bucket, 
 you are the Bucket Owner. AWS charges you for two things:  
 1. Storage Costs: How much space the files take up sitting on the disk.
 2. Data Transfer Out (Network Costs): Every time someone downloads a file out of your bucket to the internet, you pay for the network bandwidth.
@@ -160,10 +161,12 @@ The Person Downloading (The Requester): Pays for the Data Transfer Out network c
 3. How it Works Technically (The Rules)Because the person downloading is going to be charged money by AWS, a couple of strict technical rules 
 must be met:Rule A: No Anonymous AccessNormally, you can make an S3 object public so anyone with a web link can download it anonymously. 
 
-With Requester Pays enabled, anonymous access is completely blocked. The person downloading must authenticate using their own AWS Access Key and Secret
+With Requester Pays enabled, anonymous access is completely blocked. The person downloading must authenticate using their 
+own AWS Access Key and Secret
+
 Key so AWS knows exactly which account to send the bill to!  
 
-Rule B: The Header AcknowledgmentIf you try to download a file from a Requester Pays bucket using standard code or the CLI, 
+Rule B: The Header Acknowledgment If you try to download a file from a Requester Pays bucket using standard code or the CLI, 
 AWS will instantly block you with a 403 Access Denied error.Why? Because AWS wants to prevent you from accidentally spending money without realizing it. 
 To successfully download the file, your code or terminal command must explicitly add a header stating, 
 "Yes, I know this costs money, and I agree to pay for it."  
@@ -181,9 +184,11 @@ In your Node.js code (AWS SDK), you must pass a parameter:JavaScriptconst comman
 =====================================================================================================================================================
 
 s3: Object Tagging:
+
 S3 Object Tagging uses key-value pairs to categorize and manage data efficiently. This is great for large-scale data management. 
 
-To understand S3 Object Tagging, think of your S3 bucket like a massive physical warehouse. If you store thousands of boxes (objects) in that warehouse, typing long names on them helps you find them, but it doesn't help you categorize or manage them easily.
+To understand S3 Object Tagging, think of your S3 bucket like a massive physical warehouse. If you store thousands of boxes (objects) 
+in that warehouse, typing long names on them helps you find them, but it doesn't help you categorize or manage them easily.
 
 Object Tagging is like walking through that warehouse with a label gun and slapping Key-Value pairs (like sticky notes) onto specific files. For example, you can take a file and add a tag where the Key is Environment and the Value is Production.
 
@@ -212,7 +217,8 @@ When your software scales, your AWS bill grows. The company accountants will ask
 Example: If you tag every file created by your notification microservice with Project = DistributedNotification, you can go to your AWS Billing Dashboard and filter the exact monthly cost of just those files.
 
 Where to Use Object Tagging? (Real-World Scenarios)
-As a backend engineer, you will typically program your Node.js application to automatically apply tags when uploading files using the AWS SDK. Here are three classic scenarios where you would implement this:
+As a backend engineer, you will typically program your Node.js application to automatically apply tags 
+when uploading files using the AWS SDK. Here are three classic scenarios where you would implement this:
 
 Scenario A: Multi-Tenant Applications (SaaS)
 If you are building a B2B app where multiple client companies upload images into the same S3 bucket, you can tag each upload at the moment of creation:
@@ -246,6 +252,306 @@ Independent of Data: You can change or update tags on a file at any time without
 
 s3: Bucket Policy
 
+
+=====================================================================================================================================================
+
+S3 Permission Policies
+
+Basically in this video, I have logged in root account and Yashika-dev account
+Now I create s3 bucket in root account and creating apolicy from root account
+so that Yashika-dev can see those s3 Buckets
+
+2) Next how can everyone access the s3 bucket  
+1. create a bucket
+2. create a policy
+3. hit save, copy url and check
+
+
+presigned Url:
+Let's slow things down and make Pre-signed URLs incredibly crystal clear using real-world apps you use every single day.
+
+Forget about the code for a second. Let's look at how this works conceptually in three real-time engineering scenarios.
+
+Real-Time Usecase 1: Watching a Premium Movie on Netflix or Hotstar
+Imagine you are paying a subscription to watch a premium web series.
+
+The Setup: Netflix stores all their video files inside private, secure S3 buckets. They cannot make the bucket public, otherwise, someone would steal the video links and post them on Telegram for free.
+
+The Problem: When you click "Play" on your phone app, how does Netflix let you stream the movie without making the whole video file public to the world?
+
+The Pre-signed URL Solution: 1. Your app tells the Netflix backend server: "Yashika has paid her subscription and wants to watch Episode 1."
+2. The Netflix server validates your subscription, talks to AWS behind the scenes, and creates a Pre-signed URL just for that specific video file.
+3. This URL is secretly coded to expire in 2 hours (the length of the movie).
+4. Your phone player uses that link to stream the movie perfectly. If you copy that link and text it to a friend who hasn't paid, by the time they click it, the link will say "Expired / Access Denied".
+
+Real-Time Usecase 2: Downloading an Invoice or Ticket on Swiggy / Zomato
+You order food, and you need to download the PDF receipt to check the billing.
+
+The Setup: Swiggy stores millions of customer receipts in a private S3 bucket. It must be private because receipts contain home addresses and phone numbers.
+
+The Problem: If you want to download your invoice, Swiggy can't just give you their master AWS administrative password to look into the bucket.
+
+The Pre-signed URL Solution: 1. You tap "Download Invoice" on your app.
+2. Swiggy’s backend checks your order history and creates a temporary link that expires in exactly 5 minutes.
+3. The app opens that link, your phone downloads the PDF, and then the link completely self-destructs. Your private data stays 100% safe because no one else can reuse that link.
+
+Real-Time Usecase 3: Uploading a Profile Picture on LinkedIn (The Node.js Saver)
+This is a massive backend engineering pattern. You want to let a user upload a high-resolution 5MB image for their profile picture.
+
+The Standard (Bad) Way: The user uploads the image to your Node.js backend server, and then your Node.js server passes it over to S3.
+
+Why this is bad: If 1,000 users upload heavy images at the exact same time, your Node.js server will run out of memory, slow down, and crash.
+
+The Pre-signed URL Way (The Professional Way):
+
+Your frontend React app tells your Node.js backend: "Yashika wants to upload a file named my-photo.jpg."
+
+Your Node.js backend doesn't touch the file. It just asks AWS: "Give me a pre-signed upload link (PutObject) for a file named my-photo.jpg that expires in 3 minutes."
+
+Node.js sends this blank, authorized upload link back to React.
+
+Your React frontend sends the heavy image file directly from your browser straight to Amazon S3.
+
+Your Node.js server completely bypasses the heavy lifting! It stays perfectly fast and lightweight because S3 handles the network bandwidth of processing the file.
+
+In Plain English Summary:
+A pre-signed URL is simply a link generated by your trusted backend that says to AWS S3:
+
+"Hey S3, I am the developer here. I trust this specific user right now. Let them download or upload this one specific file, but start a timer and shut down this link after 10 minutes."x1
+
+
+Steps:
+========
+
+Select the Bucket.
+Click Actions.
+Share presigned url and click on the link to share.
+
+
+=====================================================================================================================================================
+
+s3: securing buckets:
+========================
+
+
+1. AWS SSE-S3 Encryption:
+  ========================
+What is SSE-S3? (The Simple Explanation)SSE-S3 stands for Server-Side Encryption with Amazon S3 Managed Keys.
+Think of it as an automatic, invisible scrambled-text machine.When you upload a file: Before the file hits the 
+actual physical hard drive in the AWS data center, AWS intercepts it, generates a strong mathematical key, 
+and encrypts the file using the industry-standard $AES-256$ encryption algorithm.When you download a file: 
+When your Node.js backend or a user requests that file, AWS automatically finds the key, decrypts the file 
+back to its original form, and hands it to you.To you, your code, and your users, everything looks completely normal. 
+Your images load fine and your files download fine. The encryption happens entirely "on the server side" behind the curtain.
+Why should you check or care about this?You don't actually need to change anything here because AWS automatically turns 
+on SSE-S3 for every single new S3 bucket created. Here is why this automatic feature is a lifesaver for tech companies:
+1. Compliance with Zero EffortIf you are building an application that handles user data, security auditors or enterprise 
+clients will always ask: "Is your data encrypted at rest?" Because AWS enables SSE-S3 automatically, 
+you can confidently answer "Yes." You get enterprise-grade data protection without having to configure complex cryptography 
+libraries in your Node.js backend.
+
+2. Protection Against Physical Theft:
+  ========================================
+Imagine a high-tech thief manages to sneak into an Amazon data 
+center in Mumbai, rips a hard drive straight out of an AWS server rack, and runs away with it.
+Without Encryption: They could plug that drive into a computer and read all your users' private files.
+With SSE-S3: Because the data is encrypted on the disk, all the thief will see is millions of lines of unreadable, 
+randomized digital gibberish. The data is utterly useless without the keys, which are stored safely in a completely different, 
+locked-down AWS security system.3. It is 100% FreeAWS does not charge you a single extra paise or cent for using SSE-S3. 
+There are no performance slowdowns, and there are no extra fees on your monthly bill.
+
+What you should know (SDE-1 Interview Knowledge):
+
+If an interviewer asks you about data security in S3, 
+here are the core facts to keep in mind:It’s the Default: You don't have to write any special headers in your 
+Express.js upload scripts to encrypt the data. S3 handles it the moment the file arrives.
+AWS Manages the Keys: With SSE-S3, Amazon fully controls, rotates, and safeguards the encryption keys. 
+You don't have to create, look at, or manage the keys yourself.
+
+
+While SSE-S3 is great because it is automatic and free, many companies switch to SSE-KMS (Key Management Service) for their backend systems.
+                                                                                ===================================
+The easiest way to understand the difference is to think about hotel safety:
+
+SSE-S3 is like a safe built into a hotel room where the hotel staff manages the master combination. 
+It keeps your things hidden, but you don't control the lock or see a log of who opened it.
+
+SSE-KMS is like bringing your own heavy-duty digital smart lock to that safe. You hold the master key, you can change the passcode whenever you want, and your phone gets an alert showing the exact second someone tries to touch it.
+
+The 3 Big Differences You Need to Know
+
+1. Audit Trails and Tracking (The Log Book)
+SSE-S3: If someone accesses a file, it is decrypted automatically. You don't get a specific security log showing which internal application key decrypted it.
+
+SSE-KMS: Every single time an image or file is uploaded or downloaded, AWS KMS logs that event in a security service called CloudTrail. Your security team can open a log book and see: "At 10:14 AM, the Yashika-dev user requested the key to decrypt invoice.pdf." This tracking is a mandatory requirement for banking and healthcare applications.
+
+2. Separation of Duties (Two Layers of Control)
+Imagine a rogue employee gains administrator access to your S3 bucket.
+
+With SSE-S3: Since the bucket and the keys are bundled together, if they have access to the bucket, they can read all the files inside it.
+
+With SSE-KMS: The key lives in a completely separate security vault. You can write a policy that says: "Rahul has permission to look at the S3 bucket, but he does not have permission to use the KMS Key." Even though he can see the files exist in S3, if he tries to download them, AWS will block him because he doesn't have the key to open them.
+
+3. Manual Rotation and Destruction (The Panic Button)
+With SSE-S3: AWS automatically rotates the keys once a year. You cannot force an immediate change, and you cannot delete the key.
+
+With SSE-KMS: You have total ownership. If you suspect an API key was leaked to the public, you can log in, click "Disable Key," and your entire database of files instantly locks down to the outside world within seconds. You can also set keys to rotate on your own schedule.
+
+
+In-transit Encryption:
+=======================
+
+In-transit encryption (also called encryption in motion) means protecting your data while it is actively traveling across the internet 
+from one place to another—like from a user's mobile app to your backend server, or from your backend server to an AWS database.
+
+Think of it as putting your data inside an armored, windowless transport truck while it moves down the highway. 
+Even if a hacker sits on the side of the road trying to look inside, they can't see or steal what's being carried.
+
+The Problem It Solves: The Man-in-the-Middle Attack
+When data moves across the internet, it doesn't jump directly from a laptop to a server. It passes through dozens of public routers, 
+internet service providers (ISPs), and undersea cables.
+
+If data is unencrypted (sent in "plain text"):
+
+A malicious actor sitting on the same public coffee shop Wi-Fi network as your user can use a free network scanner tool (like Wireshark) 
+to sniff the network packets.
+
+If your user types their password, the hacker will see the exact characters of that password on their screen in plain text.
+
+How In-Transit Encryption Works
+===================================
+
+When you enable in-transit encryption (most commonly using TLS/SSL, which turns HTTP into HTTPS), a secure mathematical handshake 
+occurs the moment a connection starts:
+
+The Handshake: The browser connects to the server and says, "I want to talk securely." The server sends back its digital identity badge 
+(an SSL/TLS Certificate).
+
+The Key Agreement: The browser verifies the badge is authentic. Then, the browser and server securely agree on a unique, 
+temporary mathematical key that only the two of them know.
+
+The Scrambled Stream: From that exact millisecond onward, your React frontend scrambles the data using that key before hitting the wire.
+
+If a user types a password like Secret123, a hacker sniffing the wire will only see a scrambled mess of random bits like 8fHjx92Lp0Qz!m. 
+Only your backend server has the matching key to unscramble it back to Secret123.
+
+In-Transit vs. At-Rest: What's the difference?
+Engineers always look at security across these two completely distinct states:
+
+In-Transit Encryption: Protects data while it is moving across networks (e.g., HTTPS, SSH, SFTP). It prevents hackers from spying on traffic.
+
+At-Rest Encryption: Protects data while it is sitting still on a physical hard drive, database, or S3 bucket 
+(e.g., SSE-S3, SSE-KMS, database disk encryption). It prevents hackers from stealing the storage drive.
+
+Real-World Production Example
+In a professional full-stack architecture, you have to ensure in-transit encryption is active at every hop:
+
+Hop 1 (User to Load Balancer): The user connects over the public internet to your system. You secure this by using an HTTPS URL.
+
+Hop 2 (Load Balancer to Node.js App): Inside your cloud private network, traffic moves from the gateway to your running application container.
+
+Hop 3 (Node.js App to Database/S3): When your backend code queries PostgreSQL or uploads a file to Amazon S3, 
+that connection must also use encrypted database drivers (like ssl: true configs) so data stays safe inside the data center wires.
+
+
+Steps:
+We should create policy to enforce https.
+
+
+Bucket Versioning:
+===================
+To have the backup all the particular versions of S3 bucket which you have modified over the time.
+
+
+Bucket Replication and Batch Job:
+==================================
+
+1. If replication is not happenig correctly 
+-> Check for replication status in src bucket
+-> manafest.json, there also the reason will be present
+
+And also check this 3 major things:
+
+1. Versions enabled
+2. Check whether you use same Encryption
+3. Did the Destination Bucket block the IAM Role?
+=====================================================================================================================================================
+
+S3: Cloud front distribution:
+================================
+
+1. The CDN Layer (Nearest Edge Locations)
+When a user requests an image, they don't jump all the way to your original S3 bucket location (e.g., the Mumbai region). Instead, they hit the CloudFront Edge Location physically closest to them.
+
+If the edge server already has the image cached, it delivers it instantly.
+
+If it doesn't, CloudFront fetches it from your S3 bucket once, caches it at that edge location, and serves it to all future users nearby.
+
+2. Why the Bucket MUST Be Private
+If your S3 bucket remained public, users could completely bypass your CloudFront CDN URL and download files directly from the S3 link instead.
+
+This defeats the purpose of caching, increases your data transfer latency, and costs you more money.
+
+Keeping the bucket private ensures that there is only one secure doorway into your data: CloudFront.
+
+3. The S3 Bucket Policy (The Guard)
+As you perfectly stated, you create the S3 bucket policy to tell S3: "Only serve data if the request comes directly from my CloudFront CDN distribution." Any hacker or random user trying to access the bucket directly will hit a wall and get that AccessDenied error, while valid requests flowing through CloudFront will pass right through.
+
+Summary of what you just built:
+S3 Bucket: Private storage vault (Origin).
+
+CloudFront: Global network of fast edge servers (CDN).
+
+Bucket Policy (OAC): The secure bridge connecting them.
+
+=====================================================================================================================================================
+
+Policies:
+===========
+
+In AWS, you create policies whenever you need to grant or restrict permission for someone or something to interact with a resource.
+
+The reason this feels a bit confusing right now is because AWS handles permissions using two completely different types 
+of policies: Identity-based policies (attached to users/roles) and 
+Resource-based policies (attached directly to the bucket, like the one we just edited).
+
+Here is a clear breakdown of exactly when and why you need to create policies in your day-to-day AWS workflows.
+
+1. When to Use a Resource-Based Policy (Like S3 Bucket Policies)
+You create a policy directly on a resource when your main goal is to secure a specific destination and control who is allowed to enter it.
+
+To Bridge AWS Services (Your CloudFront Scenario): By default, AWS services are completely isolated from each other. 
+If you want CloudFront to read files from S3, or if you want an Amazon API Gateway to trigger an AWS Lambda function, 
+you must write a resource policy to bridge that gap.
+
+To Protect Sensitive Data Locations: If you have a specific S3 bucket holding production databases or logs, 
+you create a bucket policy to explicitly deny everyone except a secure backend server.
+
+Cross-Account Access: If you are working in a corporate setup where your frontend team uploads files from Account A, 
+but your backend processes them in Account B, you write a resource policy to trust that external account.
+
+2. When to Use an Identity-Based Policy (IAM Policies)
+You create a policy inside the IAM (Identity and Access Management) console when you want to control what a specific person or 
+piece of running code is allowed to do across all of AWS.
+
+For Applications and Servers (IAM Roles): When you deploy a Node.js or Python backend on AWS (like on an EC2 instance or an ECS container), 
+that code needs permission to upload files, send emails, or query a database. 
+You create an IAM policy allowing s3:PutObject and attach it to the server's role.
+
+For Team Members (IAM Users): When a new developer joins your team, they shouldn't have access to your billing details or production databases. 
+You create a limited IAM policy that only lets them manage specific test environments.
+
+The Core Concept: "The Guard at the Door" vs "The ID Badge"
+Think of the difference between these two policy types using a real-world security analogy:
+
+IAM Policies are like an ID Badge: It goes with you (or your backend application). 
+It lists your clearance level and what tools you are trained to use.
+
+S3 Bucket Policies are like a Guard at the Door: It stands directly in front of the bucket. 
+It doesn't care who you are; it only cares if your name is written on its specific visitor guest list.
+
+In your current setup, because you wanted to protect the bucket itself from the public while letting a CDN inside, 
+putting a Guard at the Door (S3 Bucket Policy) was the perfect and only secure choice!
 
 =====================================================================================================================================================
 
@@ -294,7 +600,212 @@ Static Website Hosting: S3 is so smart that if you throw a frontend build folder
 1.  Created a Bucket
 2.  Stored an image
 Unique url link: s3://my-aws-first-s3-bucket-24-may
-==========================================================================================================================
+========================================================================================================================================================
+
+
+This is an incredibly popular interview question because it directly tests if you know how to build a high-performance backend.
+
+When a user uploads an image from your React frontend, there are two completely different ways to design the architecture. Let's break down both patterns so you can explain them perfectly in your next interview, along with the step-by-step code.
+
+Pattern 1: The Standard Way (Frontend ➔ Backend ➔ S3)
+In this approach, your frontend sends the image to your Node.js API server (using something like multer), and your Node.js server forwards it to S3.
+
+The Steps:
+Frontend: User selects a file and submits an HTML form or multipart/form-data request to your Express server.
+
+Backend (Express): Receives the file in memory or saves it to a temp folder.
+
+AWS SDK Integration: Your backend calls the S3 client's PutObjectCommand to stream that image into your bucket.
+
+Database Update: Once S3 confirms the upload, your backend saves the resulting S3 URL into your PostgreSQL database via an INSERT query.
+
+The Node.js Code:
+JavaScript
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import express from "express";
+import multer from "multer";
+
+const app = express();
+const upload = multer({ storage: multer.memoryStorage() }); // Keep file in memory
+
+// Initialize S3 Client (Reads keys automatically from your .env/CLI config)
+const s3 = new S3Client({ region: "ap-south-1" });
+
+app.post("/upload-profile", upload.single("image"), async (req, res) => {
+  try {
+    const file = req.file;
+    const bucketName = "yashika-app-prod-storage";
+    const fileKey = `avatars/${Date.now()}-${file.originalname}`;
+
+    // Step 3: Tell the AWS SDK to send the file binary to S3
+    const uploadCommand = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: fileKey,
+      Body: file.buffer,        // The raw image binary data
+      ContentType: file.mimetype // e.g., image/jpeg
+    });
+
+    await s3.send(uploadCommand);
+
+    // Step 4: Construct the final S3 URL to save to PostgreSQL
+    const s3Url = `https://${bucketName}.s3.ap-south-1.amazonaws.com/${fileKey}`;
+    
+    // Example: await pool.query("UPDATE users SET profile_pic = $1 WHERE id = $2", [s3Url, userId]);
+
+    return res.status(200).json({ success: true, url: s3Url });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Upload failed" });
+  }
+});
+Pattern 2: The Senior-Level Way (Presigned URLs)
+If an interviewer asks: "What happens if 10,000 users upload 50MB videos at the same time? Won't your Node.js server crash because its memory/bandwidth gets choked?" This is where you hit them with the gold-standard cloud pattern: S3 Presigned URLs. Instead of sending the heavy image through your backend, your backend just generates a temporary cryptographic permission slip allowing the React frontend to upload the image directly to S3!
+
+The Steps:
+Frontend: Asks your backend: "Hey, I want to upload a file named avatar.jpg. Give me a token."
+
+Backend: Asks S3 to generate a temporary Presigned URL valid for 5 minutes. The backend sends this URL back to the frontend.
+
+Frontend (Direct Upload): Your React app makes a direct PUT request to that special S3 URL, uploading the heavy binary file directly to Amazon's infrastructure. Your backend doesn't handle a single byte of the image!
+
+Database Save: Once the frontend gets a 200 OK from S3, it hits your backend text endpoint to save the S3 file path in PostgreSQL.
+
+The Backend Code to Generate the Link:
+JavaScript
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+const s3 = new S3Client({ region: "ap-south-1" });
+
+app.post("/get-presigned-url", async (req, res) => {
+  const { fileName, fileType } = req.body;
+  const fileKey = `uploads/${Date.now()}-${fileName}`;
+
+  const command = new PutObjectCommand({
+    Bucket: "yashika-app-prod-storage",
+    Key: fileKey,
+    ContentType: fileType
+  });
+
+  // Generate a URL that expires in 300 seconds (5 minutes)
+  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+
+  // Return the secure temporary link to the frontend
+  return res.json({ uploadUrl, fileUrl: `https://yashika-app-prod-storage.s3.ap-south-1.amazonaws.com/${fileKey}` });
+});
+The Frontend (React) Code to execute the direct upload:
+JavaScript
+// Step 1 & 2: Get the temporary upload link from your backend
+const response = await axios.post("/get-presigned-url", { fileName: file.name, fileType: file.type });
+const { uploadUrl, fileUrl } = response.data;
+
+// Step 3: Bypass your server! Send the binary file straight to Amazon S3
+await axios.put(uploadUrl, file, {
+  headers: { "Content-Type": file.type }
+});
+
+// Step 4: Save 'fileUrl' into your PostgreSQL database via your normal text API
+await axios.post("/save-profile-to-db", { imageUrl: fileUrl });
+How to ace this question in your interview:
+If they ask you how to do it, say:
+
+"There are two ways. For low-traffic apps, I use Pattern 1 where the file goes through an Express middleware like multer and is forwarded via
+the AWS SDK's PutObjectCommand. However, for high-scale production systems, I prefer Pattern 2 using Presigned URLs. 
+This decouples file ingestion entirely from our compute instances. The backend merely serves as an authentication gatekeeper, 
+generating a temporary presigned link so the client can stream the binary directly to S3. This saves massive amounts of CPU and network 
+bandwidth on our EC2 instances."
+
+======================================================================================================================================
+1. Can we save a direct image (not a URL) to the disk?
+
+Yes. When a user uploads a file, it comes across the network as raw binary code (a stream of bytes). 
+Your Node.js server can take that raw binary data and write it directly onto your server's hard drive using the built-in File System module (fs).
+
+
+2. Do we still store a URL/Path in the Database?
+Even when saving directly to your server's disk, you still save a text string (a path or URL) in your PostgreSQL database, never the raw image binary.
+
+Why?
+Database Performance: Databases like PostgreSQL are optimized to hold structured, lightweight text and numbers. 
+If you try to save a massive 5MB raw binary image block (called a BLOB or BYTEA data type) inside a database table cell, 
+it slows the database down to a crawl. Querying your users table would become incredibly slow because the database has to drag heavy 
+file blocks through its memory cache every time.
+
+Separation of Concerns: A database is built to store relations and data points, while a hard drive (or S3) is optimized to store heavy files.
 
 
 
+Is "Needing More Space" the ONLY reason we move to S3/URLs?
+You mentioned that storing direct images takes up more storage space, which is true—but no, 
+that is actually not the main reason we switch to S3. Storage space on a hard drive is cheap.
+
+The real, critical problems with storing files directly on your EC2 or local server's disk are Scalability and Durability:
+
+Reason A: The Auto-Scaling Nightmare (The "Split-Brain" Problem)
+Remember our conversation about Auto-Scaling?
+
+If you have EC2 Server A and EC2 Server B running at the same time:
+
+A user connects to Server A and uploads a profile picture. The file is saved directly onto Server A's hard drive.
+
+Five minutes later, that same user refreshes the page. The load balancer routes their request to Server B.
+
+Server B looks at its own hard drive, can't find the image, and displays a broken 404 Not Found link to the user! 
+Local hard drives cannot easily talk to or sync with each other across different servers in real time.
+
+Reason B: Server Destruction (Data Loss)
+In the cloud, virtual servers (EC2 instances) are treated like disposable pieces of paper. If an EC2 instance crashes, 
+experiences a hardware failure, or scales down because traffic dropped, AWS completely deletes that instance along with its entire hard drive. 
+If your user images were stored on that local disk, they are erased forever.
+
+Reason C: Server Crash due to Disk Full
+If a malicious user writes a script to upload millions of heavy files to your API, your server's local hard drive will hit 100% capacity.
+When a server's operating system runs completely out of disk space, the entire Node.js application crashes and dies instantly, 
+taking your whole website down. S3, on the other hand, has virtually infinite storage capacity and will never fill up or crash.
+
+
+
+
+
+
+
+======================================================================================================================================
+
+In the general world of networking—outside of AWS completely—your intuition is completely spot on. You have cracked the exact core logic of how the internet works.
+
+Let's look at how this happens normally, and then see exactly how Anycast handles the edge location problem.
+
+1. The General Rule (A Single Server Setup)
+In a normal, non-cloud setup, when you buy yashika.com, the DNS system does map your name to a specific, non-random, single server IP address.
+
+How it works: You rent a physical server from a hosting provider. That server has a fixed, dedicated public IP address (like 192.0.2.25).
+
+The DNS Mapping: You go into your DNS dashboard and create a standard A Record (Address Record) that says:
+yashika.com ➔ 192.0.2.25
+
+The Result: Every single person in the world who types your name gets handed that exact same IP address. Their computer connects directly to that single physical box.
+
+2. The Edge Location Problem (Why the General Rule Breaks)
+The single-IP approach works perfectly for a simple website, but it breaks completely when you scale to a global delivery system like a CDN (CloudFront).
+
+If you mapped yashika.com to just one static IP address belonging to a server in Mumbai:
+
+A user in Chennai gets a fast response.
+
+A user in New York has to wait for data to travel across the oceans, making the website feel incredibly slow.
+
+Because you have hundreds of edge locations, you cannot just tie your name to one physical box's IP address.
+
+3. How Anycast Routing Fixes This
+To solve this, modern networks use Anycast Routing. This is one of the coolest tricks in networking:
+
+Instead of assigning a different IP address to every edge location, the network team assigns the exact same public IP address to multiple edge locations around the world.
+
+How does the internet route this without getting confused?
+The edge locations in Mumbai, Chennai, London, and New York all advertise to the global internet: "Hey, I am IP address 192.0.2.99!"
+
+The global internet routers look at the pathways.
+
+When a user in Chennai sends a request to 192.0.2.99, the internet routers automatically drop the traffic off at the physically closest router advertising that IP (the Chennai edge).
+
+When a user in New York types the exact same URL, their request hits the New York edge server sharing that identical IP.
